@@ -1,11 +1,7 @@
 import { type Metadata } from "next"
 import { and, asc, desc, gte, inArray, like, lte, sql } from "drizzle-orm"
-
 import { db } from "@/config/db"
 import { bookings, type Booking } from "@/db/schema"
-
-import auth from "@/lib/auth"
-
 import {
   Card,
   CardContent,
@@ -31,12 +27,10 @@ interface ClinicBookingsPageProps {
 export default async function ClinicBookingsPage({
   searchParams,
 }: Readonly<ClinicBookingsPageProps>): Promise<JSX.Element> {
-
   const { page, per_page, sort, from, to, lastName, type, email } =
     searchParams ?? {}
 
   const limit = typeof per_page === "string" ? parseInt(per_page) : 10
-
   const offset =
     typeof page === "string"
       ? parseInt(page) > 0
@@ -47,9 +41,9 @@ export default async function ClinicBookingsPage({
   const [column, order] =
     typeof sort === "string"
       ? (sort.split(".") as [
-        keyof Booking | undefined,
-        "asc" | "desc" | undefined,
-      ])
+          keyof Booking | undefined,
+          "asc" | "desc" | undefined,
+        ])
       : []
 
   const types =
@@ -58,83 +52,62 @@ export default async function ClinicBookingsPage({
   const fromDay = typeof from === "string" ? new Date(from) : undefined
   const toDay = typeof to === "string" ? new Date(to) : undefined
 
-  const { items, count } = await db.transaction(async (tx) => {
-    const items = await tx
-      .select()
-      .from(bookings)
-      .limit(limit)
-      .offset(offset)
-      .where(
-        and(
-
-          // Filter by lat name
-          typeof lastName === "string"
-            ? like(bookings.lastName, `%${lastName}%`)
-            : undefined,
-
-          // Filter by type
-          types.length > 0 ? inArray(bookings.type, types) : undefined,
-
-          // Filter by email
-          typeof email === "string"
-            ? like(bookings.email, `%${email}%`)
-            : undefined,
-
-          // Filter by createdAt
-          fromDay && toDay
-            ? and(
+  // Fetch bookings data
+  const items = await db
+    .select()
+    .from(bookings)
+    .limit(limit)
+    .offset(offset)
+    .where(
+      and(
+        typeof lastName === "string"
+          ? like(bookings.lastName, `%${lastName}%`)
+          : undefined,
+        types.length > 0 ? inArray(bookings.type, types) : undefined,
+        typeof email === "string"
+          ? like(bookings.email, `%${email}%`)
+          : undefined,
+        fromDay && toDay
+          ? and(
               gte(bookings.createdAt, fromDay),
               lte(bookings.createdAt, toDay)
             )
-            : undefined
-        )
+          : undefined
       )
-      .orderBy(
-        column && column in bookings
-          ? order === "asc"
-            ? asc(bookings[column])
-            : desc(bookings[column])
-          : desc(bookings.createdAt)
-      )
+    )
+    .orderBy(
+      column && column in bookings
+        ? order === "asc"
+          ? asc(bookings[column])
+          : desc(bookings[column])
+        : desc(bookings.createdAt)
+    )
 
-    const count = await tx
-      .select({
-        count: sql<number>`count(${bookings.id})`,
-      })
-      .from(bookings)
-      .where(
-        and(
-
-          // Filter by lastname
-          typeof lastName === "string"
-            ? like(bookings.lastName, `%${lastName}%`)
-            : undefined,
-
-          // Filter by type
-          types.length > 0 ? inArray(bookings.type, types) : undefined,
-
-          // Filter by email
-          typeof email === "string"
-            ? like(bookings.email, `%${email}%`)
-            : undefined,
-
-          // Filter by createdAt
-          fromDay && toDay
-            ? and(
+  // Fetch total count
+  const countResult = await db
+    .select({
+      count: sql<number>`count(${bookings.id})`,
+    })
+    .from(bookings)
+    .where(
+      and(
+        typeof lastName === "string"
+          ? like(bookings.lastName, `%${lastName}%`)
+          : undefined,
+        types.length > 0 ? inArray(bookings.type, types) : undefined,
+        typeof email === "string"
+          ? like(bookings.email, `%${email}%`)
+          : undefined,
+        fromDay && toDay
+          ? and(
               gte(bookings.createdAt, fromDay),
               lte(bookings.createdAt, toDay)
             )
-            : undefined
-        )
+          : undefined
       )
-      .then((res) => res[0]?.count ?? 0)
+    )
 
-    return {
-      items,
-      count,
-    }
-  })
-
+  const count = countResult[0]?.count ?? 0
   const pageCount = Math.ceil(count / limit)
 
   return (

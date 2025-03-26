@@ -2,15 +2,11 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { deleteBooking } from "@/actions/booking"
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
 import { type ColumnDef } from "@tanstack/react-table"
-
 import { bookings, type Booking } from "@/db/schema"
-
 import { useToast } from "@/hooks/use-toast"
 import { formatDate } from "@/lib/utils"
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -28,17 +24,17 @@ import { DataTableColumnHeader } from "@/components/data-table/data-table-column
 interface BookingsTableShellProps {
   data: Booking[]
   pageCount: number
-  clinicId: number
+  // clinicId: number
 }
 
 export function BookingsTableShell({
   data,
   pageCount,
-  clinicId,
+  // clinicId,
 }: BookingsTableShellProps): JSX.Element {
   const toast = useToast()
   const [isPending, startTransition] = React.useTransition()
-  const [selectedRowIds, setSelectedRowIds] = React.useState<number[]>([])
+  const [selectedRowIds, setSelectedRowIds] = React.useState<string[]>([])
 
   const columns = React.useMemo<ColumnDef<Booking, unknown>[]>(
     () => [
@@ -190,18 +186,6 @@ export function BookingsTableShell({
                 onClick={() => {
                   startTransition(() => {
                     row.toggleSelected(false)
-
-                    // toast(
-                    //   deleteBookingAction({
-                    //     id: row.original.id,
-                    //     clinicId,
-                    //   }),
-                    //   {
-                    //     loading: "Usuwanie...",
-                    //     success: () => "Rezerwacja pomyślnie usunięta",
-                    //     error: (err: unknown) => console.error(err),
-                    //   }
-                    // )
                   })
                 }}
                 disabled={isPending}
@@ -214,33 +198,8 @@ export function BookingsTableShell({
         ),
       },
     ],
-    [data, isPending, clinicId]
+    [data, isPending,]
   )
-
-  // function deleteSelectedRows() {
-  //   toast.promise(
-  //     Promise.all(
-  //       selectedRowIds.map((id) =>
-  //         deleteBookingAction({
-  //           id,
-  //           clinicId,
-  //         })
-  //       )
-  //     ),
-  //     {
-  //       loading: "Usuwanie...",
-  //       success: () => {
-  //         setSelectedRowIds([])
-  //         return "Wybrane rezerwacje pomyślnie usunięte"
-  //       },
-  //       error: (err: unknown) => {
-  //         setSelectedRowIds([])
-  //         return catchError(err)
-  //       },
-  //     }
-  //   )
-  // }
-
   return (
     <DataTable
       columns={columns}
@@ -256,14 +215,7 @@ export function BookingsTableShell({
           })),
         },
       ]}
-      // searchableColumns={[
-      //   {
-      //     id: "name",
-      //     title: "names",
-      //   },
-      // ]}
       newRowLink={`/admin/rezerwacje/dodaj`}
-      // deleteRowsAction={() => void deleteSelectedRows()}
     />
   )
 }
